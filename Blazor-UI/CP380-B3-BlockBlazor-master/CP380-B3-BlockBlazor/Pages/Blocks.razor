@@ -1,0 +1,101 @@
+﻿@page "/blocks"
+
+@using CP380_B1_BlockList.Models
+@using Data
+
+<h3>Blocks</h3>
+
+@if (blocklist == null)
+{
+    <p><em>Loading...</em></p> }
+else
+{
+    <html>
+    <head>
+        <style>
+            .button {
+                border: none;
+                color: white;
+                padding: 8px 12px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                margin: 4px 2px;
+                transition-duration: 0.4s;
+                cursor: pointer;
+                border-radius: 3px;
+            }
+
+            .button1 {
+                background-color: white;
+                color: #001c47;
+                border: 2px solid #001c47;
+            }
+           
+            .button1:hover {
+                background-color: #001c47 !important;
+                color: #fff !important;
+                border-color: #001c47 !important;
+            }
+            .pull-right {
+                float: right !important;
+                padding-bottom: 10px !important;
+            }
+           
+           
+        </style>
+    </head>
+    <body>
+        <div class="pull-right">
+            <button class="button button1" @onclick="MineBlock">
+                Mine Block
+            </button>
+        </div>
+  
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead class="thead-light">
+                    <tr>
+                        <th scope="col">Date</th>
+                        <th scope="col">Hash</th>
+                        <th scope="col">Nonce</th>
+                        <th scope="col">Previous Hash</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (Block block in blocklist)
+                    {
+                        <tr>
+                            <td scope="row">@block.TimeStamp</td>
+                            <td>@block.Hash</td>
+                            <td>@block.Nonce</td>
+                            <td>@block.PreviousHash</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+    </body>
+</html>
+
+}
+
+@code { IEnumerable<Block> blocklist;
+    BlockService service = new BlockService();
+    PendingTransactionService pendingTransactionService = new PendingTransactionService();
+
+    protected override async Task OnInitializedAsync()
+    {
+        blocklist = (await service.FetchBlocks()).ToList();
+    }
+
+    private async void MineBlock()
+    {
+        MiningService miningService = new MiningService(service, pendingTransactionService);
+        Task<Block> blockNew = miningService.MineBlock(blocklist);
+        Task<Block> block = service.SubmitNewBlockAsync(blockNew.Result);
+
+        blocklist = (await service.FetchBlocks()).ToList();
+    } }
